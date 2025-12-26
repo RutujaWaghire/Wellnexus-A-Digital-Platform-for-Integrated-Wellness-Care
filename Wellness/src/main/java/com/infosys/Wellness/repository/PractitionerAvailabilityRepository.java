@@ -18,4 +18,10 @@ public interface PractitionerAvailabilityRepository extends JpaRepository<Practi
             LocalDateTime from,
             LocalDateTime to
     );
+    boolean existsByPractitionerIdAndStartTimeLessThanEqualAndEndTimeGreaterThanEqual(
+            Long practitionerId,
+            LocalDateTime slotStart,
+            LocalDateTime slotEnd
+    );
+
 }

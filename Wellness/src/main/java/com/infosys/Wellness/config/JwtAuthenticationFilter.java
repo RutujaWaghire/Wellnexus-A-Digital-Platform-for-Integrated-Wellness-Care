@@ -23,44 +23,52 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final CustomUserDetailsService userDetailsService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
-            throws ServletException, IOException {
-
-        String path = request.getServletPath();
-
-        // Do NOT require JWT for auth endpoints
-        if (path.startsWith("/api/auth/")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain
+    ) throws ServletException, IOException {
 
         String authHeader = request.getHeader("Authorization");
 
-        // If no token, just continue (Spring Security will handle access rules)
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String token = authHeader.substring(7); // remove "Bearer "
+        String token = authHeader.substring(7);
 
-        String username = jwtTokenProvider.getUsernameFromToken(token);
+        try {
+            String username = jwtTokenProvider.getUsernameFromToken(token);
 
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+            if (username != null &&
+                    SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            if (jwtTokenProvider.validateToken(token, userDetails)) {
-                UsernamePasswordAuthenticationToken authToken =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails, null, userDetails.getAuthorities());
+                UserDetails userDetails =
+                        userDetailsService.loadUserByUsername(username);
 
-                authToken.setDetails(
-                        new WebAuthenticationDetailsSource().buildDetails(request));
+                if (jwtTokenProvider.validateToken(token, userDetails)) {
 
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(
+                                    userDetails,
+                                    null,
+                                    userDetails.getAuthorities()
+                            );
+
+                    authentication.setDetails(
+                            new WebAuthenticationDetailsSource()
+                                    .buildDetails(request)
+                    );
+
+                    SecurityContextHolder.getContext()
+                            .setAuthentication(authentication);
+                }
             }
+
+        } catch (Exception e) {
+            //  DO NOTHING — INVALID TOKEN SHOULD NEVER CRASH SERVER
+            System.out.println(" Ignoring invalid JWT: " + e.getMessage());
         }
 
         filterChain.doFilter(request, response);

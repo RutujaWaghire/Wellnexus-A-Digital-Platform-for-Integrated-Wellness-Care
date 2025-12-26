@@ -1,5 +1,7 @@
 package com.infosys.Wellness.controller;
 
+import com.infosys.Wellness.dto.ReminderRequest;
+import com.infosys.Wellness.dto.RescheduleRequest;
 import com.infosys.Wellness.dto.TherapySessionCreateRequest;
 import com.infosys.Wellness.dto.TherapySessionResponse;
 import com.infosys.Wellness.entity.PractitionerProfile;
@@ -13,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,15 +27,17 @@ public class TherapySessionController {
     private final PractitionerProfileRepository practitionerRepo;
     private final UserRepository userRepository;
 
-    public TherapySessionController(TherapySessionRepository sessionRepo,
-                                    PractitionerProfileRepository practitionerRepo,
-                                    UserRepository userRepository) {
+    public TherapySessionController(
+            TherapySessionRepository sessionRepo,
+            PractitionerProfileRepository practitionerRepo,
+            UserRepository userRepository
+    ) {
         this.sessionRepo = sessionRepo;
         this.practitionerRepo = practitionerRepo;
         this.userRepository = userRepository;
     }
 
-    // Patient books a session
+    // 🔹 1️⃣ Patient books a session
     @PostMapping
     public ResponseEntity<TherapySessionResponse> createSession(
             Authentication auth,
@@ -45,63 +50,134 @@ public class TherapySessionController {
         PractitionerProfile practitioner = practitionerRepo.findById(request.getPractitionerId())
                 .orElseThrow(() -> new RuntimeException("Practitioner not found"));
 
-        // Build and save session using slotStart/slotEnd (not date)
-        TherapySession session = new TherapySession();
-        session.setUser(user);
-        session.setPractitioner(practitioner);
-
         if (request.getSlotStart() == null) {
             return ResponseEntity.badRequest().build();
         }
+
+        TherapySession session = new TherapySession();
+        session.setUser(user);
+        session.setPractitioner(practitioner);
         session.setSlotStart(request.getSlotStart());
-
-        // If client didn't provide slotEnd, default 30 minutes
-        if (request.getSlotEnd() != null) {
-            session.setSlotEnd(request.getSlotEnd());
-        } else {
-            session.setSlotEnd(request.getSlotStart().plusMinutes(30));
-        }
-
+        session.setSlotEnd(
+                request.getSlotEnd() != null
+                        ? request.getSlotEnd()
+                        : request.getSlotStart().plusMinutes(30)
+        );
         session.setNotes(request.getNotes());
         session.setStatus("BOOKED");
         session.setCanceled(false);
 
         TherapySession saved = sessionRepo.save(session);
 
-        TherapySessionResponse resp = new TherapySessionResponse(
-                saved.getId(),
-                practitioner.getUser().getName(),
-                practitioner.getSpecialization(),
-                saved.getSlotStart(),
-                saved.getSlotEnd(),
-                saved.getStatus(),
-                saved.getNotes()
-        );
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(resp);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(convert(saved));
     }
 
-    // Patient session history
+    // 🔹 2️⃣ Patient views own sessions
     @GetMapping("/my")
     public ResponseEntity<List<TherapySessionResponse>> getMySessions(Authentication auth) {
         String email = auth.getName();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        List<TherapySession> sessions = sessionRepo.findByUser(user);
-
-        List<TherapySessionResponse> response = sessions.stream()
-                .map(s -> new TherapySessionResponse(
-                        s.getId(),
-                        s.getPractitioner().getUser().getName(),
-                        s.getPractitioner().getSpecialization(),
-                        s.getSlotStart(),
-                        s.getSlotEnd(),
-                        s.getStatus(),
-                        s.getNotes()
-                ))
+        List<TherapySessionResponse> response = sessionRepo.findByUser(user)
+                .stream()
+                .map(this::convert)
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(response);
+    }
+
+    // 🔹 3️⃣ Patient cancels a session
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<?> cancelSession(
+            @PathVariable Long id,
+            Authentication auth
+    ) {
+        String email = auth.getName();
+
+        TherapySession session = sessionRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Session not found"));
+
+        if (!session.getUser().getEmail().equals(email)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("You can cancel only your own session");
+        }
+
+        session.setStatus("CANCELED");
+        session.setCanceled(true);
+        TherapySession updated = sessionRepo.save(session);
+
+        return ResponseEntity.ok(convert(updated));
+    }
+
+    // 🔹 4️⃣ Patient Reschedules a session (OPTIONAL FEATURE)
+    @PatchMapping("/{id}/reschedule")
+    public ResponseEntity<?> rescheduleSession(
+            @PathVariable Long id,
+            Authentication auth,
+            @RequestBody RescheduleRequest request
+    ) {
+        String email = auth.getName();
+
+        TherapySession session = sessionRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Session not found"));
+
+        // security: only owner can reschedule
+        if (!session.getUser().getEmail().equals(email)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("You can reschedule only your own session");
+        }
+
+        LocalDateTime newStart = request.getNewSlotStart();
+        LocalDateTime newEnd = request.getNewSlotEnd() != null
+                ? request.getNewSlotEnd()
+                : newStart.plusMinutes(30);
+
+        session.setSlotStart(newStart);
+        session.setSlotEnd(newEnd);
+        session.setStatus("RESCHEDULED");
+
+        TherapySession updated = sessionRepo.save(session);
+
+        return ResponseEntity.ok(convert(updated));
+    }
+    @PatchMapping("/{id}/reminder")
+    public ResponseEntity<?> setReminder(
+            @PathVariable Long id,
+            Authentication auth,
+            @RequestBody ReminderRequest request
+    ) {
+        String email = auth.getName();
+
+        TherapySession session = sessionRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Session not found"));
+
+        // ensure only the session owner sets reminder
+        if (!session.getUser().getEmail().equals(email)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("You can set reminder only for your own sessions");
+        }
+
+        session.setReminderAt(request.getReminderAt());
+        sessionRepo.save(session);
+
+        return ResponseEntity.ok(
+                "Reminder saved for " + request.getReminderAt()
+        );
+    }
+
+
+    // Helper method
+    private TherapySessionResponse convert(TherapySession s) {
+        return new TherapySessionResponse(
+                s.getId(),
+                s.getPractitioner().getUser().getName(),
+                s.getPractitioner().getSpecialization(),
+                s.getSlotStart(),
+                s.getSlotEnd(),
+                s.getStatus(),
+                s.getNotes()
+        );
     }
 }

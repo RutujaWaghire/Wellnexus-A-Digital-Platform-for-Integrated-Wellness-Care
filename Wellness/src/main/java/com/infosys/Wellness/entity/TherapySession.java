@@ -58,4 +58,8 @@ public class TherapySession {
     // Link to previous session if rescheduled
     @Column(name = "_rescheduledFrom")
     private Long rescheduledFrom;
+
+    // new field for calendar reminder
+    @Column(name = "_reminderAt")
+    private LocalDateTime reminderAt;
 }

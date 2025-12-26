@@ -17,45 +17,83 @@ public class SlotService {
 
     private final PractitionerAvailabilityRepository availabilityRepo;
     private final TherapySessionRepository sessionRepo;
-    private final Duration defaultSlotDuration = Duration.ofMinutes(30);
 
-    public SlotService(PractitionerAvailabilityRepository availabilityRepo,
-                       TherapySessionRepository sessionRepo) {
+    private static final Duration DEFAULT_SLOT_DURATION = Duration.ofMinutes(30);
+
+    public SlotService(
+            PractitionerAvailabilityRepository availabilityRepo,
+            TherapySessionRepository sessionRepo
+    ) {
         this.availabilityRepo = availabilityRepo;
         this.sessionRepo = sessionRepo;
     }
 
     /**
-     * Generate available slots for a practitioner between from..to with given slotDuration.
-     * Uses LocalDateTime (no timezone conversion here). Excludes sessions whose status == "CANCELED".
+     * Generate available slots for a practitioner between from..to
+     * - Uses LocalDateTime
+     * - Excludes BOOKED / COMPLETED sessions
+     * - Removes duplicate slots caused by overlapping availability
      */
-    public List<SlotDto> generateSlots(Long practitionerId, LocalDateTime from, LocalDateTime to, Duration slotDuration) {
-        if (slotDuration == null) slotDuration = defaultSlotDuration;
+    public List<SlotDto> generateSlots(
+            Long practitionerId,
+            LocalDateTime from,
+            LocalDateTime to,
+            Duration slotDuration
+    ) {
 
+        if (slotDuration == null) {
+            slotDuration = DEFAULT_SLOT_DURATION;
+        }
+
+        //  Fetch availability overlapping requested window
         List<PractitionerAvailability> availabilities =
-                availabilityRepo.findByPractitionerIdAndEndTimeAfterAndStartTimeBefore(practitionerId, from, to);
+                availabilityRepo.findByPractitionerIdAndEndTimeAfterAndStartTimeBefore(
+                        practitionerId, from, to
+                );
 
-        List<TherapySession> booked = sessionRepo.findByPractitioner_IdAndSlotStartBetweenAndStatusNot(
-                practitionerId, from, to, "CANCELED");
+        //  Fetch sessions that block slots
+        List<TherapySession> bookedSessions =
+                sessionRepo.findByPractitioner_IdAndSlotStartBetweenAndStatusIn(
+                        practitionerId,
+                        from,
+                        to,
+                        List.of("BOOKED", "COMPLETED")
+                );
 
-        Set<LocalDateTime> bookedStarts = booked.stream()
+        Set<LocalDateTime> bookedStarts = bookedSessions.stream()
                 .map(TherapySession::getSlotStart)
                 .collect(Collectors.toSet());
 
+        //  Generate slots (with de-duplication)
+        Set<LocalDateTime> uniqueStarts = new HashSet<>();
         List<SlotDto> slots = new ArrayList<>();
-        for (PractitionerAvailability a : availabilities) {
-            LocalDateTime s = a.getStartTime().isBefore(from) ? from : a.getStartTime();
-            LocalDateTime end = a.getEndTime().isAfter(to) ? to : a.getEndTime();
-            while (!s.plus(slotDuration).isAfter(end)) {
-                if (!bookedStarts.contains(s)) {
+
+        for (PractitionerAvailability availability : availabilities) {
+
+            LocalDateTime cursor =
+                    availability.getStartTime().isBefore(from)
+                            ? from
+                            : availability.getStartTime();
+
+            LocalDateTime availabilityEnd =
+                    availability.getEndTime().isAfter(to)
+                            ? to
+                            : availability.getEndTime();
+
+            while (!cursor.plus(slotDuration).isAfter(availabilityEnd)) {
+
+                if (!bookedStarts.contains(cursor) && uniqueStarts.add(cursor)) {
                     SlotDto slot = new SlotDto();
-                    slot.setStart(s);
-                    slot.setEnd(s.plus(slotDuration));
+                    slot.setStart(cursor);
+                    slot.setEnd(cursor.plus(slotDuration));
                     slots.add(slot);
                 }
-                s = s.plus(slotDuration);
+
+                cursor = cursor.plus(slotDuration);
             }
         }
+
+        //  Sort chronologically
         slots.sort(Comparator.comparing(SlotDto::getStart));
         return slots;
     }

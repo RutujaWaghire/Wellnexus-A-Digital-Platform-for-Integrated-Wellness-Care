@@ -11,15 +11,25 @@ import java.util.List;
 @Repository
 public interface TherapySessionRepository extends JpaRepository<TherapySession, Long> {
 
-    // Already added methods...
+    // Practitioner based queries
     List<TherapySession> findByPractitioner_Id(Long practitionerId);
-    List<TherapySession> findByPractitioner_IdAndSlotStartBetween(Long practitionerId, LocalDateTime from, LocalDateTime to);
-    List<TherapySession> findByPractitioner_IdAndSlotStartBetweenAndStatusNot(
-            Long practitionerId, LocalDateTime from, LocalDateTime to, String excludedStatus);
 
-    // ⬅⬅⬅ ADD THIS
+    List<TherapySession> findByPractitioner_IdAndSlotStartBetween(
+            Long practitionerId,
+            LocalDateTime from,
+            LocalDateTime to
+    );
+
+    //  REQUIRED for SlotService
+    List<TherapySession> findByPractitioner_IdAndSlotStartBetweenAndStatusIn(
+            Long practitionerId,
+            LocalDateTime from,
+            LocalDateTime to,
+            List<String> statuses
+    );
+
+    // User based queries
     List<TherapySession> findByUser(User user);
 
-    // Optional safer version:
     List<TherapySession> findByUser_Id(Long userId);
 }
