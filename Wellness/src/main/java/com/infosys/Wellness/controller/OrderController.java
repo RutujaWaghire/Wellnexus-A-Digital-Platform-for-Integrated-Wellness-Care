@@ -1,13 +1,17 @@
 package com.infosys.Wellness.controller;
 
+import com.infosys.Wellness.dto.OrderRequestDTO;
 import com.infosys.Wellness.entity.Order;
+import com.infosys.Wellness.entity.Product;
 import com.infosys.Wellness.entity.User;
 import com.infosys.Wellness.repository.OrderRepository;
+import com.infosys.Wellness.repository.ProductRepository;
 import com.infosys.Wellness.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -16,13 +20,14 @@ import java.util.List;
 public class OrderController {
 
     private final OrderRepository orderRepository;
-    private final UserRepository userRepository;   // NEW
+    private final UserRepository userRepository;
+    private final ProductRepository productRepository;
 
-    // 1) CREATE order for the currently logged-in user
+    // CREATE PRODUCT ORDER (PATIENT)
     @PostMapping
-    public Order createOrder(@RequestBody Order order) {
+    public Order createOrder(@RequestBody OrderRequestDTO request) {
 
-        // username = email (we set this in CustomUserDetailsService)
+        // Get logged-in user email
         String email = SecurityContextHolder.getContext()
                 .getAuthentication()
                 .getName();
@@ -30,13 +35,42 @@ public class OrderController {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        order.setUser(user);        // link order to that user
+        Product product = productRepository.findById(request.getProductId())
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+
+        if (product.getStock() < request.getQuantity()) {
+            throw new RuntimeException("Insufficient stock");
+        }
+
+        // Reduce product stock
+        product.setStock(product.getStock() - request.getQuantity());
+        productRepository.save(product);
+
+        double totalAmount = product.getPrice() * request.getQuantity();
+
+        Order order = Order.builder()
+                .user(user)
+                .productId(product.getId())
+                .quantity(request.getQuantity())
+                .totalAmount(totalAmount)
+                .orderDate(LocalDateTime.now().toString())
+                .status("PLACED")
+                .build();
+
         return orderRepository.save(order);
     }
 
-    // 2) GET orders of any user (you already had this)
-    @GetMapping("/user/{userId}")
-    public List<Order> getOrdersByUser(@PathVariable Long userId) {
-        return orderRepository.findByUser_Id(userId);
+    // GET orders of logged-in user
+    @GetMapping("/my")
+    public List<Order> getMyOrders() {
+
+        String email = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return orderRepository.findByUser_Id(user.getId());
     }
 }
