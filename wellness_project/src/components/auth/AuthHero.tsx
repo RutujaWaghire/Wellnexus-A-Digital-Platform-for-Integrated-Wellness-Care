@@ -101,12 +101,12 @@ const AuthHero = () => {
             <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center shadow-glow">
               <Leaf className="h-6 w-6 text-primary-foreground" />
             </div>
-            <span className="font-display text-2xl font-bold text-foreground">WellnessHub</span>
+            <span className="font-display text-2xl font-bold text-foreground">Wellnexus</span>
           </div>
           
           <h1 className="font-display text-4xl lg:text-5xl font-bold text-foreground leading-tight mb-4">
-            Your Journey to
-            <span className="block text-primary">Holistic Wellness</span>
+            {/* Your Journey to */}
+            <span className="block text-primary">A Digital Platform for Integrated Wellness Care</span>
           </h1>
           
           <p className="text-lg text-muted-foreground mb-8 leading-relaxed">

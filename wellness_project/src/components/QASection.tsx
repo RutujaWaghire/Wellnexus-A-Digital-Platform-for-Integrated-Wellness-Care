@@ -205,7 +205,7 @@ const QASection = () => {
               Community Q&A
             </h2>
             <p className="text-muted-foreground max-w-2xl">
-              Ask questions and share knowledge with our wellness community
+              Ask questions and share knowledge with our Wellnexus community
             </p>
           </div>
           

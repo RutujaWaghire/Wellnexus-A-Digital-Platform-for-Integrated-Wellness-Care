@@ -84,7 +84,7 @@ const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
     
     toast({
       title: "Account Created!",
-      description: "Welcome to WellnessHub! Redirecting to your dashboard...",
+      description: "Welcome to Wellnexus! Redirecting to your dashboard...",
     });
     navigate("/dashboard");
   };
