@@ -32,7 +32,7 @@ const Dashboard = () => {
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
               <Leaf className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="font-display text-xl font-bold text-foreground">WellnessHub</span>
+            <span className="font-display text-xl font-bold text-foreground">Wellnexus</span>
           </Link>
           
           <nav className="hidden md:flex items-center gap-8">
@@ -103,7 +103,8 @@ const Dashboard = () => {
                     </div>
                   </div>
                 ))}
-                <Button variant="outline" className="w-full mt-4">View All Bookings</Button>
+                <Link to="/bookings"><Button variant="outline" className="w-full mt-4">View All Bookings</Button></Link>
+                {/* <Button variant="outline" className="w-full mt-4">View All Bookings</Button> */}
               </CardContent>
             </Card>
           </div>
@@ -121,10 +122,12 @@ const Dashboard = () => {
                     Find Therapists
                   </Button>
                 </Link>
+                 <Link to="/therapists">
                 <Button variant="outline" className="w-full justify-start">
                   <Calendar className="w-4 h-4 mr-3" />
                   Book a Session
                 </Button>
+                </Link>
                 <Button variant="outline" className="w-full justify-start">
                   <Star className="w-4 h-4 mr-3" />
                   Leave a Review

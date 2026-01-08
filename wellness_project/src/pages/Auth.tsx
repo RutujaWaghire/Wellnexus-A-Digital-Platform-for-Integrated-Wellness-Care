@@ -34,9 +34,9 @@ const Auth = () => {
   const getSubtitle = () => {
     switch (view) {
       case "login":
-        return "Sign in to continue your wellness journey";
+        return "Sign in to continue your Wellnexus journey";
       case "register":
-        return "Join our community of wellness seekers";
+        return "Join our community of Wellnexus seekers";
       case "forgot-password":
         return "We'll help you get back on track";
     }
@@ -59,7 +59,7 @@ const Auth = () => {
                 <path d="M12 2a9 9 0 0 0-9 9c0 3.5 2 6.5 5 8.5V22l3-2 3 2v-2.5c3-2 5-5 5-8.5a9 9 0 0 0-9-9z" />
               </svg>
             </div>
-            <span className="font-display text-xl font-bold text-foreground">WellnessHub</span>
+            <span className="font-display text-xl font-bold text-foreground">Wellnexus</span>
           </div>
 
           {/* Header */}
