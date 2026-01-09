@@ -1,1 +1,0 @@
-# Wellnexus-A-Digital-Platform-for-Integrated-Wellness-Care
