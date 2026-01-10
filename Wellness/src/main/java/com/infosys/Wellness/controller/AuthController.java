@@ -1,4 +1,5 @@
 package com.infosys.Wellness.controller;
+import com.infosys.Wellness.entity.Role;
 import com.infosys.Wellness.entity.User;
 import com.infosys.Wellness.repository.UserRepository;
 import com.infosys.Wellness.config.JwtTokenProvider;
@@ -10,7 +11,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -24,15 +25,22 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody User user) {
 
+        System.out.println("REGISTER HIT: " + user.getEmail() + " " + user.getRole());
+
         if (userRepository.existsByEmail(user.getEmail())) {
-            return ResponseEntity.badRequest().body("Email already registered!");
+            return ResponseEntity.badRequest().body("Email already registered");
         }
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
+
+        // 🔒 SAFETY: normalize role
+        user.setRole(Role.valueOf(user.getRole().name().toUpperCase()));
+
         userRepository.save(user);
 
         return ResponseEntity.ok("User registered successfully");
     }
+
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody User loginReq) {

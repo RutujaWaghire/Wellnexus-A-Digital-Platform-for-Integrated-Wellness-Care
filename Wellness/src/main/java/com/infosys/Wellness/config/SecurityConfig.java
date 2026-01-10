@@ -34,7 +34,7 @@ public class SecurityConfig {
                 // Authorization rules
                 .authorizeHttpRequests(auth -> auth
 
-                        // Auth APIs
+                        // 🔓 Auth APIs
                         .requestMatchers("/api/auth/**").permitAll()
 
                         // 🔓 Product browsing – PUBLIC
@@ -42,12 +42,8 @@ public class SecurityConfig {
 
                         // 🔐 Product creation – ADMIN ONLY
                         .requestMatchers(HttpMethod.POST, "/api/products").hasRole("ADMIN")
-
                         .requestMatchers(HttpMethod.PUT, "/api/products/**").hasRole("ADMIN")
-
-
                         .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasRole("ADMIN")
-
 
                         // 🔐 Orders – PATIENT ONLY
                         .requestMatchers("/api/orders/**").hasRole("PATIENT")
@@ -57,6 +53,17 @@ public class SecurityConfig {
 
                         // 🔐 Community Q&A – authenticated users
                         .requestMatchers("/api/questions/**").authenticated()
+
+                        // 🔥🔥 MILESTONE 4 (FIX)
+                        .requestMatchers("/api/recommendations/**").hasAuthority("ROLE_PATIENT")
+                        .requestMatchers("/api/notifications/**").hasAuthority("ROLE_PATIENT")
+
+                        .requestMatchers("/api/health/**").authenticated()
+
+                        // 🔐 Admin analytics
+                        .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
+
+
 
                         // Everything else
                         .anyRequest().authenticated()
