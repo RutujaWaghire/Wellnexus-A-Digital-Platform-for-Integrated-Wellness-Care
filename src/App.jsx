@@ -1,27 +1,27 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Dashboard from "./components/Dashboard";
-import PrivateRoute from "./pages/PrivateRoute";
+import PatientDashboard from "./pages/PatientDashboard";
+import PractitionerDashboard from "./pages/PractitionerDashboard";
+import EditProfile from "./pages/EditProfile"; // ✅ ADD THIS
+import AdminDashboard from "./pages/AdminDashboard"; // ✅ ADD THIS
+import Practitioners from "./pages/Practitioners"; // ✅ ADD THIS
 
-export default function App() {
+function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+    <Routes>
+      <Route path="/" element={<Login />} />
+      <Route path="/register" element={<Register />} />
 
-        {/* Protected Route */}
-        <Route
-          path="/dashboard"
-          element={
-            <PrivateRoute>
-              <Dashboard />
-            </PrivateRoute>
-          }
-        />
-      </Routes>
-    </BrowserRouter>
+      {/* ✅ NEW */}
+      <Route path="/edit-profile" element={<EditProfile />} />
+      <Route path="/admin-dashboard" element={<AdminDashboard />} />
+      <Route path="/practitioners" element={<Practitioners />} />
+
+      <Route path="/patient-dashboard" element={<PatientDashboard />} />
+      <Route path="/practitioner-dashboard" element={<PractitionerDashboard />} />
+    </Routes>
   );
 }
+
+export default App;

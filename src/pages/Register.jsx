@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-// import { useNavigate } from "react-router-dom";
 
 export default function Register() {
   const [username, setUsername] = useState("");
@@ -10,42 +9,46 @@ export default function Register() {
 
   const navigate = useNavigate();
 
+  // ✅ Redirect logged-in users based on role
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("loggedInUser"));
-    if (user) navigate("/dashboard", { replace: true });
+
+    if (user?.role === "PATIENT") {
+      navigate("/patient-dashboard", { replace: true });
+    } else if (user?.role === "PRACTITIONER") {
+      navigate("/practitioner-dashboard", { replace: true });
+    }
   }, [navigate]);
 
   const register = async (e) => {
     e.preventDefault();
 
     try {
-      const res = await fetch("http://localhost:5000/api/register", {
+      const res = await fetch("http://localhost:8080/api/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          username,
+          name: username,
           email,
           password,
-          userType,
+          role: userType.toUpperCase(),
         }),
       });
 
       if (!res.ok) {
-        throw new Error("Registration failed");
+        const errText = await res.text();
+        throw new Error(errText || "Registration failed");
       }
 
-      const data = await res.json();
+      await res.text();
 
-      // Backend should return token + user
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("loggedInUser", JSON.stringify(data.user));
-
-      navigate("/dashboard");
+      alert("Registration successful. Please login.");
+      navigate("/", { replace: true });
 
     } catch (err) {
-      alert(err.message);
+      alert("Registration failed: " + err.message);
     }
   };
 
