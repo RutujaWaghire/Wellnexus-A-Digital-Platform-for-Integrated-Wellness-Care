@@ -49,9 +49,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (decoded) {
         // Extract user info from JWT payload
         setUser({
-          id: decoded.sub || '',
+          id: decoded.userId?.toString() || '',
           email: decoded.sub || '',
-          fullName: decoded.fullName || decoded.name || '',
+          fullName: decoded.name || '',
           role: decoded.role || 'USER',
         });
       }
@@ -67,9 +67,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const decoded = decodeJWT(token);
       if (decoded) {
         setUser({
-          id: decoded.sub || '',
+          id: decoded.userId?.toString() || '',
           email: decoded.sub || '',
-          fullName: decoded.fullName || decoded.name || '',
+          fullName: decoded.name || '',
           role: decoded.role || 'USER',
         });
       }

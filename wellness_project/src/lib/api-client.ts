@@ -1,4 +1,15 @@
 import { API_ENDPOINTS } from './api-config';
+import type {
+  UserProfileUpdate,
+  TherapySessionBooking,
+  AddToCartRequest,
+  User,
+  Practitioner,
+  Therapy,
+  Product,
+  CartItem,
+  Notification,
+} from './api-types';
 
 // Token management
 const TOKEN_KEY = 'wellnexus_auth_token';
@@ -119,6 +130,14 @@ class ApiClient {
 export const apiClient = new ApiClient();
 
 // Export specific API services
+
+// Note on Authentication:
+// - Practitioner and Product endpoints are public (no auth required) as per backend SecurityConfig
+// - Cart, Therapy, User, and Notification endpoints require authentication
+// - This matches the backend's security configuration where:
+//   * /api/practitioners/** and /api/products/** are permitAll()
+//   * Other endpoints require authenticated users
+
 export const authApi = {
   login: async (email: string, password: string) => {
     const response = await apiClient.post<string>(
@@ -149,31 +168,31 @@ export const userApi = {
     return apiClient.get(API_ENDPOINTS.USER_DASHBOARD);
   },
   
-  getProfile: async (userId: string) => {
+  getProfile: async (userId: string): Promise<User> => {
     return apiClient.get(`${API_ENDPOINTS.USERS}/${userId}`);
   },
   
-  updateProfile: async (userId: string, data: any) => {
+  updateProfile: async (userId: string, data: UserProfileUpdate): Promise<User> => {
     return apiClient.put(`${API_ENDPOINTS.USERS}/${userId}`, data);
   },
 };
 
 export const practitionerApi = {
-  getAll: async () => {
+  getAll: async (): Promise<Practitioner[]> => {
     return apiClient.get(API_ENDPOINTS.PRACTITIONERS, false);
   },
   
-  getById: async (id: string) => {
+  getById: async (id: string): Promise<Practitioner> => {
     return apiClient.get(`${API_ENDPOINTS.PRACTITIONERS}/${id}`, false);
   },
 };
 
 export const therapyApi = {
-  getAll: async () => {
+  getAll: async (): Promise<Therapy[]> => {
     return apiClient.get(API_ENDPOINTS.THERAPIES);
   },
   
-  getById: async (id: string) => {
+  getById: async (id: string): Promise<Therapy> => {
     return apiClient.get(`${API_ENDPOINTS.THERAPIES}/${id}`);
   },
   
@@ -181,26 +200,27 @@ export const therapyApi = {
     return apiClient.get(API_ENDPOINTS.THERAPY_SESSIONS);
   },
   
-  bookSession: async (data: any) => {
+  bookSession: async (data: TherapySessionBooking) => {
     return apiClient.post(API_ENDPOINTS.THERAPY_SESSIONS, data);
   },
 };
 
 export const productApi = {
-  getAll: async () => {
+  getAll: async (): Promise<Product[]> => {
     return apiClient.get(API_ENDPOINTS.PRODUCTS, false);
   },
   
-  getById: async (id: string) => {
+  getById: async (id: string): Promise<Product> => {
     return apiClient.get(`${API_ENDPOINTS.PRODUCTS}/${id}`, false);
   },
   
-  getCart: async () => {
+  getCart: async (): Promise<CartItem[]> => {
     return apiClient.get(API_ENDPOINTS.CART);
   },
   
   addToCart: async (productId: string, quantity: number) => {
-    return apiClient.post(API_ENDPOINTS.CART, { productId, quantity });
+    const data: AddToCartRequest = { productId, quantity };
+    return apiClient.post(API_ENDPOINTS.CART, data);
   },
   
   removeFromCart: async (cartItemId: string) => {
@@ -209,7 +229,7 @@ export const productApi = {
 };
 
 export const notificationApi = {
-  getAll: async () => {
+  getAll: async (): Promise<Notification[]> => {
     return apiClient.get(API_ENDPOINTS.NOTIFICATIONS);
   },
   
