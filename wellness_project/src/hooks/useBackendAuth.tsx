@@ -19,8 +19,17 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Helper to decode JWT token (basic implementation)
-const decodeJWT = (token: string): any => {
+// Helper to decode JWT token
+interface JWTPayload {
+  sub: string;        // email
+  userId: number;     // user ID
+  name: string;       // full name
+  role: string;       // user role
+  iat: number;        // issued at
+  exp: number;        // expiration
+}
+
+const decodeJWT = (token: string): JWTPayload | null => {
   try {
     const base64Url = token.split('.')[1];
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -30,7 +39,7 @@ const decodeJWT = (token: string): any => {
         .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
         .join('')
     );
-    return JSON.parse(jsonPayload);
+    return JSON.parse(jsonPayload) as JWTPayload;
   } catch (error) {
     console.error('Error decoding JWT:', error);
     return null;

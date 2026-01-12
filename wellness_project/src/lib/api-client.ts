@@ -132,11 +132,14 @@ export const apiClient = new ApiClient();
 // Export specific API services
 
 // Note on Authentication:
-// - Practitioner and Product endpoints are public (no auth required) as per backend SecurityConfig
-// - Cart, Therapy, User, and Notification endpoints require authentication
-// - This matches the backend's security configuration where:
-//   * /api/practitioners/** and /api/products/** are permitAll()
-//   * Other endpoints require authenticated users
+// These authentication requirements match the backend's SecurityConfig.java
+// Public endpoints (no auth required):
+//   - /api/practitioners/** - Browse practitioners without login
+//   - /api/products/** - Browse products without login
+// Protected endpoints (auth required):
+//   - /api/cart, /api/therapies, /api/users, /api/notifications
+//   - All other endpoints not explicitly marked as permitAll()
+// See: wellness_backend/src/main/java/com/wellness/backend/security/SecurityConfig.java
 
 export const authApi = {
   login: async (email: string, password: string) => {
@@ -218,7 +221,7 @@ export const productApi = {
     return apiClient.get(API_ENDPOINTS.CART);
   },
   
-  addToCart: async (productId: string, quantity: number) => {
+  addToCart: async (productId: number, quantity: number) => {
     const data: AddToCartRequest = { productId, quantity };
     return apiClient.post(API_ENDPOINTS.CART, data);
   },

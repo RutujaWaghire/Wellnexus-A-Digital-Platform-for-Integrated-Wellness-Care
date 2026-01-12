@@ -28,7 +28,7 @@ export interface TherapySessionBooking {
 }
 
 export interface AddToCartRequest {
-  productId: string;
+  productId: number;
   quantity: number;
 }
 

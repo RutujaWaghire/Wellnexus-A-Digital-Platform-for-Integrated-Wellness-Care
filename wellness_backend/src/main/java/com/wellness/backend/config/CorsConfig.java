@@ -46,7 +46,7 @@ public class CorsConfig {
             "Content-Disposition"
         ));
         
-        // Cache preflight requests for 10 minutes (development-friendly)
+        // Cache preflight requests for 10 minutes (600 seconds) - development-friendly
         configuration.setMaxAge(600L);
         
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
