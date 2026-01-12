@@ -1,0 +1,42 @@
+# Wellnexus Project - Root .gitignore
+
+# Log files from start scripts
+backend.log
+frontend.log
+*.log
+
+# Process ID files
+.pids
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+
+# OS specific
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+
+# Environment variables with secrets (if any)
+.env.local
+.env.production
+
+# Build outputs (already in subdirectories, but just in case)
+dist/
+build/
+target/
+
+# Node modules (should be in wellness_project/.gitignore)
+node_modules/
+
+# Dependencies
+package-lock.json
+yarn.lock
