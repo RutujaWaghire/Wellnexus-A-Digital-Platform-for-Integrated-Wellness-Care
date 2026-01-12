@@ -37,7 +37,7 @@ Wellnexus-A-Digital-Platform-for-Integrated-Wellness-Care/
 
 ### Prerequisites
 
-- **Java 21** or higher
+- **Java 17** or higher (Java 21 is configured but 17 will work)
 - **Node.js 18+** and npm
 - **MySQL 8.0+** database
 - **Maven 3.6+**
