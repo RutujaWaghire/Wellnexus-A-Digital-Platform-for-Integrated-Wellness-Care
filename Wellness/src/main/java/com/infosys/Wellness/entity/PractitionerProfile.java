@@ -16,6 +16,8 @@ public class PractitionerProfile {
     private Long id;
 
     // FK → User._id
+
+
     @OneToOne
     @JoinColumn(name = "_userId", nullable = false, unique = true)
     private User user;

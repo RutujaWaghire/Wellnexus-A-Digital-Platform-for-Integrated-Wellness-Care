@@ -18,17 +18,4 @@ public class    WellnessApplication {
 	}
 
 
-    @Bean
-    CommandLineRunner fixAdmin(UserRepository repo, PasswordEncoder encoder) {
-        return args -> {
-            User admin = repo.findByEmail("admin1@example.com")
-                    .orElseThrow(() -> new RuntimeException("Admin not found"));
-
-            admin.setPassword(encoder.encode("admin123"));
-            repo.save(admin);
-
-            System.out.println("✅ Admin password reset to admin123");
-        };
-    }
-
 }
