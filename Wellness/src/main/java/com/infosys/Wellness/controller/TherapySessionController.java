@@ -167,6 +167,32 @@ public class TherapySessionController {
         );
     }
 
+    // 🔹 5️⃣ Practitioner views their booked sessions
+    @GetMapping("/practitioner")
+    public ResponseEntity<List<TherapySessionResponse>> getPractitionerSessions(
+            Authentication auth
+    ) {
+        String email = auth.getName();
+
+        // logged-in practitioner user
+        User practitionerUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // practitioner profile
+        PractitionerProfile practitionerProfile = practitionerRepo
+                .findByUser_Id(practitionerUser.getId())
+                .orElseThrow(() -> new RuntimeException("Practitioner profile not found"));
+
+        List<TherapySessionResponse> response = sessionRepo
+                .findByPractitioner(practitionerProfile)
+                .stream()
+                .map(this::convert)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(response);
+    }
+
+
 
     // Helper method
     private TherapySessionResponse convert(TherapySession s) {

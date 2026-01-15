@@ -1,5 +1,6 @@
 package com.infosys.Wellness.repository;
 
+import com.infosys.Wellness.entity.PractitionerProfile;
 import com.infosys.Wellness.entity.TherapySession;
 import com.infosys.Wellness.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -32,4 +33,6 @@ public interface TherapySessionRepository extends JpaRepository<TherapySession, 
     List<TherapySession> findByUser(User user);
 
     List<TherapySession> findByUser_Id(Long userId);
+    List<TherapySession> findByPractitioner(PractitionerProfile practitioner);
+
 }

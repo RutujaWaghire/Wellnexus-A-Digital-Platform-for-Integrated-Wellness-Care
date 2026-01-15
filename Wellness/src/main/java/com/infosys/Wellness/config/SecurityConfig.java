@@ -52,6 +52,8 @@ public class SecurityConfig {
 
                         // Public
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/practitioners/**").permitAll()
+
 
 
                         .requestMatchers("/api/practitioners/me").hasAuthority("ROLE_PRACTITIONER")

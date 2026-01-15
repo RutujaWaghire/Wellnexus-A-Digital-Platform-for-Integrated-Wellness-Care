@@ -1,5 +1,6 @@
 package com.infosys.Wellness.controller;
 
+import com.infosys.Wellness.dto.PractitionerListResponse;
 import com.infosys.Wellness.dto.PractitionerProfileRequest;
 import com.infosys.Wellness.entity.PractitionerProfile;
 import com.infosys.Wellness.entity.Role;
@@ -74,14 +75,24 @@ public class PractitionerController {
 
     // ✅ LIST PRACTITIONERS
     @GetMapping
-    public ResponseEntity<List<PractitionerProfile>> listPractitioners(
+    public ResponseEntity<List<PractitionerListResponse>> listPractitioners(
             @RequestParam(required = false) String specialization
     ) {
-        if (specialization == null || specialization.isBlank()) {
-            return ResponseEntity.ok(practitionerRepo.findAll());
-        }
-        return ResponseEntity.ok(
-                practitionerRepo.findBySpecializationContainingIgnoreCase(specialization)
-        );
+        List<PractitionerProfile> profiles =
+                (specialization == null || specialization.isBlank())
+                        ? practitionerRepo.findAll()
+                        : practitionerRepo.findBySpecializationContainingIgnoreCase(specialization);
+
+        List<PractitionerListResponse> response = profiles.stream()
+                .map(p -> new PractitionerListResponse(
+                        p.getId(),
+                        p.getUser().getName(),
+                        p.getUser().getEmail(),
+                        p.getSpecialization()
+                ))
+                .toList();
+
+        return ResponseEntity.ok(response);
     }
+
 }
