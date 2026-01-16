@@ -1,19 +1,24 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import wellnessBg from "../assets/wellness-bg.jpeg";
 
 export default function PractitionerDashboard() {
   const navigate = useNavigate();
 
   const [profile, setProfile] = useState(null);
-  const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
 
+  const [availabilityDate, setAvailabilityDate] = useState("");
+  const [availabilityTime, setAvailabilityTime] = useState("");
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+
+  /* 🔐 Route protection + Profile fetch */
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("loggedInUser"));
     const token = localStorage.getItem("token");
 
-    // 🔐 Auth check
     if (!token || !user || user.role !== "PRACTITIONER") {
       setRedirecting(true);
       localStorage.clear();
@@ -21,43 +26,13 @@ export default function PractitionerDashboard() {
       return;
     }
 
-    // 1️⃣ Fetch practitioner profile
     fetch("http://localhost:8080/api/practitioners/me", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` },
     })
-      .then((res) => {
-        if (res.status === 401) {
-          throw new Error("Session expired");
-        }
-        return res.json();
-      })
-      .then((profileData) => {
-        setProfile(profileData);
-
-        // 2️⃣ Fetch practitioner sessions
-        return fetch(
-          "http://localhost:8080/api/sessions/practitioner",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-      })
-      .then((res) => res.json())
-      .then((sessionsData) => {
-        console.log("Practitioner sessions:", sessionsData);
-        setSessions(sessionsData);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        setRedirecting(true);
-        localStorage.clear();
-        navigate("/", { replace: true });
-      });
+      .then(res => res.ok ? res.json() : Promise.reject("Failed to load profile"))
+      .then(data => setProfile(data))
+      .catch(() => alert("Unable to load practitioner profile"))
+      .finally(() => setLoading(false));
   }, [navigate]);
 
   const logout = () => {
@@ -65,88 +40,163 @@ export default function PractitionerDashboard() {
     navigate("/", { replace: true });
   };
 
-  if (redirecting) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-lg">Redirecting to login...</p>
-      </div>
-    );
-  }
+  const addAvailability = async () => {
+    if (!availabilityDate || !availabilityTime) {
+      alert("Please select date and time");
+      return;
+    }
 
-  if (loading) {
+    try {
+      setAvailabilityLoading(true);
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(
+        "http://localhost:8080/api/practitioners/availability",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            date: availabilityDate,
+            time: availabilityTime,
+          }),
+        }
+      );
+
+      if (!res.ok) throw new Error("Failed to add availability");
+
+      alert("Availability added successfully");
+      setAvailabilityDate("");
+      setAvailabilityTime("");
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setAvailabilityLoading(false);
+    }
+  };
+
+  if (redirecting || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-lg">Loading dashboard...</p>
+        <p className="text-lg text-gray-600">
+          {redirecting ? "Redirecting..." : "Loading dashboard..."}
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center gap-6 p-6 bg-gray-100">
-      <h1 className="text-2xl font-bold">
-        Practitioner Dashboard{" "}
-        {profile.verified && <span className="text-green-600">✔</span>}
-      </h1>
+    <div
+      className="min-h-screen bg-cover bg-center relative"
+      style={{ backgroundImage: `url(${wellnessBg})` }}
+    >
+      {/* Soft overlay */}
+      <div className="absolute inset-0 bg-white/25 backdrop-blur-sm"></div>
 
-      {/* Profile Card */}
-      <div className="bg-white shadow-md rounded-lg p-6 w-full max-w-md space-y-2">
-        <p>
-          <strong>Name:</strong> {profile.user.name}
-        </p>
-        <p>
-          <strong>Email:</strong> {profile.user.email}
-        </p>
-        <p>
-          <strong>Specialization:</strong> {profile.specialization}
-        </p>
+      <div className="relative z-10 max-w-7xl mx-auto px-6 py-10">
+        {/* HEADER */}
+        <div className="flex justify-between items-start mb-12">
+          <div>
+            <h1 className="text-3xl font-semibold text-[#2f3e3a]">
+              Welcome, {profile.user?.name}
+            </h1>
+            <p className="text-[#6b7c77]">{profile.specialization}</p>
 
-        {profile.verified ? (
-          <p className="text-green-600 font-semibold">✔ Verified</p>
-        ) : (
-          <p className="text-yellow-600">⏳ Verification Pending</p>
-        )}
+            <div className="mt-4">
+              {profile.verified ? (
+                <span className="px-4 py-1 rounded-full bg-green-100 text-green-700 text-sm">
+                  ✔ Verified Practitioner
+                </span>
+              ) : (
+                <span className="px-4 py-1 rounded-full bg-yellow-100 text-yellow-700 text-sm">
+                  ⏳ Verification Pending
+                </span>
+              )}
+            </div>
+          </div>
+
+          <button
+            onClick={logout}
+            className="bg-[#6b8f7a] text-white px-5 py-2 rounded-lg hover:bg-[#5f7f6b]"
+          >
+            Logout
+          </button>
+        </div>
+
+        {/* STATS */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          {[
+            "Upcoming Sessions",
+            "Total Sessions",
+            "Average Rating",
+            "Availability Slots",
+          ].map(title => (
+            <motion.div
+              key={title}
+              whileHover={{ scale: 1.04 }}
+              className="bg-white rounded-2xl shadow-lg p-6"
+            >
+              <p className="text-sm text-[#6b7c77]">{title}</p>
+              <p className="text-3xl font-semibold text-[#2f3e3a] mt-3">—</p>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* MAIN GRID */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* AVAILABILITY */}
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <h2 className="text-lg font-medium mb-4 text-[#2f3e3a]">
+              Manage Availability
+            </h2>
+
+            <div className="flex flex-col gap-4">
+              <input
+                type="date"
+                value={availabilityDate}
+                onChange={e => setAvailabilityDate(e.target.value)}
+                className="border rounded-md px-3 py-2"
+              />
+
+              <input
+                type="time"
+                value={availabilityTime}
+                onChange={e => setAvailabilityTime(e.target.value)}
+                className="border rounded-md px-3 py-2"
+              />
+
+              <button
+                onClick={addAvailability}
+                disabled={availabilityLoading}
+                className="bg-[#6b8f7a] text-white py-2 rounded-md hover:bg-[#5f7f6b]"
+              >
+                {availabilityLoading ? "Adding..." : "Add Availability"}
+              </button>
+            </div>
+          </div>
+
+          {/* COMMUNITY Q&A */}
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <h2 className="text-lg font-medium text-[#2f3e3a] mb-4">
+              Community Q&A
+            </h2>
+
+            <textarea
+              rows={4}
+              className="w-full border rounded-md px-4 py-3"
+              placeholder="Write your answer here..."
+            />
+
+            <div className="flex justify-end mt-4">
+              <button className="bg-[#6b8f7a] text-white px-6 py-2 rounded-md">
+                Submit Answer
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
-
-      {/* Sessions Section */}
-      <div className="bg-white shadow-md rounded-lg p-6 w-full max-w-2xl">
-        <h2 className="text-xl font-semibold mb-4">
-          My Booked Sessions
-        </h2>
-
-        {sessions.length === 0 ? (
-          <p className="text-gray-500">
-            No sessions booked yet.
-          </p>
-        ) : (
-          <table className="w-full border">
-            <thead>
-              <tr className="bg-gray-200">
-                <th className="p-2 border">Start</th>
-                <th className="p-2 border">End</th>
-                <th className="p-2 border">Status</th>
-                <th className="p-2 border">Notes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sessions.map((s) => (
-                <tr key={s.id} className="text-center">
-                  <td className="p-2 border">{s.slotStart}</td>
-                  <td className="p-2 border">{s.slotEnd}</td>
-                  <td className="p-2 border">{s.status}</td>
-                  <td className="p-2 border">{s.notes}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      <button
-        onClick={logout}
-        className="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition"
-      >
-        Logout
-      </button>
     </div>
   );
 }
