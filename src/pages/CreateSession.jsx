@@ -3,12 +3,15 @@ import { useNavigate } from "react-router-dom";
 
 export default function CreateSession() {
   const navigate = useNavigate();
+
   const [practitioners, setPractitioners] = useState([]);
   const [practitionerId, setPractitionerId] = useState("");
   const [slotStart, setSlotStart] = useState("");
   const [slotEnd, setSlotEnd] = useState("");
   const [notes, setNotes] = useState("");
+  const [loading, setLoading] = useState(false);
 
+  // 🔐 Load practitioners (PATIENT)
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) return;
@@ -16,7 +19,7 @@ export default function CreateSession() {
     fetch("http://localhost:8080/api/practitioners", {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then((r) => r.json())
+      .then((res) => res.json())
       .then(setPractitioners)
       .catch((err) =>
         console.error("Failed to load practitioners", err)
@@ -41,6 +44,8 @@ export default function CreateSession() {
     };
 
     try {
+      setLoading(true);
+
       const res = await fetch("http://localhost:8080/api/sessions", {
         method: "POST",
         headers: {
@@ -50,37 +55,55 @@ export default function CreateSession() {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Booking failed");
+      if (!res.ok) throw new Error("Session booking failed");
 
       const data = await res.json();
       navigate("/session-success", { state: { session: data } });
     } catch (err) {
       alert(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-100 to-blue-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#eef4f2] via-[#f7faf9] to-[#ffffff] px-4">
       <form
         onSubmit={handleSubmit}
-        className="bg-white w-full max-w-lg rounded-xl shadow-lg p-8 space-y-6"
+        className="
+          w-full max-w-2xl
+          bg-white
+          rounded-2xl
+          px-10 py-10
+          shadow-[0_15px_45px_rgba(0,0,0,0.08)]
+        "
       >
-        <h2 className="text-3xl font-bold text-center text-gray-800">
-          Book Therapy Session
-        </h2>
+        {/* HEADER */}
+        <div className="mb-8 text-center">
+          <h2 className="text-3xl font-bold text-[#1f3f3a]">
+            Book a Therapy Session
+          </h2>
+          <p className="mt-2 text-sm text-[#6f8f89]">
+            Choose a practitioner and schedule your wellness session
+          </p>
+        </div>
 
-        {/* Practitioner */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+        {/* PRACTITIONER */}
+        <div className="mb-6">
+          <label className="block mb-1 text-sm font-medium text-[#1f3f3a]">
             Practitioner
           </label>
           <select
-            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
             value={practitionerId}
             onChange={(e) => setPractitionerId(e.target.value)}
             required
+            className="
+              w-full px-4 py-3 rounded-xl
+              bg-[#eef4f2] text-[#1f3f3a]
+              focus:outline-none focus:ring-2 focus:ring-[#9fc2b8]
+            "
           >
-            <option value="">Select practitioner</option>
+            <option value="">Select a practitioner</option>
             {practitioners.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name} — {p.specialization}
@@ -89,61 +112,85 @@ export default function CreateSession() {
           </select>
         </div>
 
-        {/* Date & Time */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* DATE & TIME */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block mb-1 text-sm font-medium text-[#1f3f3a]">
               Start Date & Time
             </label>
             <input
               type="datetime-local"
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
               value={slotStart}
               onChange={(e) => setSlotStart(e.target.value)}
               required
+              className="
+                w-full px-4 py-3 rounded-xl
+                bg-[#eef4f2] text-[#1f3f3a]
+                focus:outline-none focus:ring-2 focus:ring-[#9fc2b8]
+              "
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block mb-1 text-sm font-medium text-[#1f3f3a]">
               End Date & Time (Optional)
             </label>
             <input
               type="datetime-local"
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
               value={slotEnd}
               onChange={(e) => setSlotEnd(e.target.value)}
+              className="
+                w-full px-4 py-3 rounded-xl
+                bg-[#eef4f2] text-[#1f3f3a]
+                focus:outline-none focus:ring-2 focus:ring-[#9fc2b8]
+              "
             />
           </div>
         </div>
 
-        {/* Notes */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Notes / Problem Description
+        {/* NOTES */}
+        <div className="mb-8">
+          <label className="block mb-1 text-sm font-medium text-[#1f3f3a]">
+            Notes / Health Concern
           </label>
           <textarea
-            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none resize-none"
-            rows="3"
-            placeholder="Describe your issue briefly..."
+            rows={3}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
+            placeholder="Briefly describe your concern..."
+            className="
+              w-full px-4 py-3 rounded-xl resize-none
+              bg-[#eef4f2] text-[#1f3f3a]
+              placeholder-[#8fa5a0]
+              focus:outline-none focus:ring-2 focus:ring-[#9fc2b8]
+            "
           />
         </div>
 
-        {/* Buttons */}
+        {/* ACTIONS */}
         <div className="flex gap-4">
           <button
             type="submit"
-            className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold transition"
+            disabled={loading}
+            className="
+              flex-1 py-3 rounded-xl
+              bg-[#2f5f59] text-white font-semibold
+              hover:bg-[#274f4a]
+              transition disabled:opacity-50
+            "
           >
-            Book Session
+            {loading ? "Booking..." : "Confirm Session"}
           </button>
 
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 rounded-lg font-semibold transition"
+            className="
+              flex-1 py-3 rounded-xl
+              bg-[#e6efec] text-[#1f3f3a] font-semibold
+              hover:bg-[#d7e7e2]
+              transition
+            "
           >
             Cancel
           </button>
